@@ -422,9 +422,8 @@
             els.uploadMenuBtn.classList.remove('bg-drk-50', 'hover:bg-drk-100', 'text-drk-800', 'bg-powercup-50', 'hover:bg-powercup-100', 'text-powercup-800');
             els.uploadMenuBtn.classList.add(brand.SECONDARY_BG, `hover:bg-${basePrefix}-100`, brand.PRIMARY_TEXT);
             
-            // Comparison Mode Selectors (re-apply correct style)
-            updateComparisonMode(comparisonMode);
-
+            // Comparison Mode Selectors (will be handled by updateComparisonMode)
+            
             // Scanner View Guide
             els.scannerGuide.classList.remove('border-drk-500', 'border-powercup-500');
             els.scannerGuide.classList.add(brand.BORDER);
@@ -454,12 +453,12 @@
             let targetBrand = BRANDS.DRK;
             // Si el modo es 'overall_best' O si la mejor oferta no es DRK
             if (comparisonMode === 'overall_best' || (lastComparisonResult && !offer.isDrk)) {
-                 // Si la mejor oferta es DRK, mantenemos DRK. Si no, cambiamos a Power Cup.
-                 if (offer.isDrk || lastComparisonResult.isNegativeSavings) {
-                     targetBrand = BRANDS.DRK; 
-                 } else {
-                     targetBrand = BRANDS.POWER_CUP;
-                 }
+                // Si la mejor oferta es DRK, mantenemos DRK. Si no, cambiamos a Power Cup.
+                if (offer.isDrk || lastComparisonResult.isNegativeSavings) {
+                    targetBrand = BRANDS.DRK; 
+                } else {
+                    targetBrand = BRANDS.POWER_CUP;
+                }
             } else {
                 // Si el modo es 'drk_only' o 'drk_prioritized'
                 targetBrand = BRANDS.DRK;
@@ -468,8 +467,7 @@
             return targetBrand;
         }
 
-        function updateTariffCount() {
-            // ... (unmodified)
+        function updateTariffCount() { 
             els.tariffDisplayBadge.textContent = currentTariffs.length;
             if (currentTariffs.length > 0) {
                 els.loadingStatus.classList.add('hidden');
@@ -780,7 +778,7 @@
                 lastComparisonResult = { ...finalComparisonResult, isNegativeSavings: false };
             }
 
-            // Aplicar la marca antes de renderizar los resultados
+            // 4. Aplicar la marca antes de renderizar los resultados (Este controlará el resultado final)
             setActiveBrand(lastComparisonResult.offer);
 
             renderResultsUI(lastComparisonResult.offer, lastComparisonResult);
@@ -1139,7 +1137,7 @@
                 
                 <!-- TOTALES FINALES (TOTAL MES Y TOTAL AÑO) -->
                 <tr><td style="${rowLabel} background-color: #eee; font-weight: bold;">TOTAL MES (PERIODO FACTURADO - ${bd.dias_facturados} DÍAS)</td><td style="${rowValue} background-color: #eee; font-size: 16px; white-space: nowrap;">${eur(bd.totalPeriod)}</td></tr>
-                   <!-- LÍNEA DE TOTAL AÑO -->
+                    <!-- LÍNEA DE TOTAL AÑO -->
                 <tr><td style="${rowLabel} background-color: #eee; font-weight: bold;">TOTAL AÑO (PROYECTADO)</td><td style="${rowValue} background-color: #eee; font-size: 16px; white-space: nowrap;">${eur(bd.totalAnnual)}</td></tr>
             `;
 
@@ -1430,23 +1428,30 @@
         // Función para manejar cambios de modo y actualizar estilos
         function updateComparisonMode(newMode) {
             comparisonMode = newMode;
-            // Definir prefijo de color a usar en los selectores (siempre DRK en la vista inicial)
-            const basePrefix = 'drk'; 
+            
+            // LÓGICA NUEVA: Aplicar branding inmediatamente al cambiar el modo
+            let currentBrandForInput = BRANDS.DRK;
+            if (newMode === 'overall_best') {
+                currentBrandForInput = BRANDS.POWER_CUP;
+            }
+            applyBrandStyles(currentBrandForInput); 
+
+            // Obtener el prefijo de color de la marca ACTIVA (ya configurada por applyBrandStyles)
+            const basePrefix = activeBrand.NAME === 'DRK Energía' ? 'drk' : 'powercup'; 
 
             document.querySelectorAll('input[name="comparison_mode"]').forEach(input => {
                 const label = input.closest('label');
                 
-                // Limpieza de estilos dinámicos (DRK/POWER CUP)
+                // 1. Limpieza de estilos dinámicos (DRK/POWER CUP) para todos
                 label.classList.remove('border-drk-500', 'bg-drk-500', 'hover:bg-drk-600', 'border-drk-300');
                 label.classList.remove('border-powercup-500', 'bg-powercup-500', 'hover:bg-powercup-600', 'border-powercup-300');
 
-
                 if (input.value === newMode) {
-                    // Estilo Seleccionado
+                    // 2. Estilo Seleccionado (usa el nuevo basePrefix)
                     label.classList.add(`border-${basePrefix}-500`, `bg-${basePrefix}-500`, 'text-white', `hover:bg-${basePrefix}-600`);
                     label.classList.remove('text-slate-600', 'bg-white', `hover:bg-${basePrefix}-100`);
                 } else {
-                    // Estilo No Seleccionado
+                    // 3. Estilo No Seleccionado (usa el nuevo basePrefix)
                     label.classList.add(`border-${basePrefix}-300`, 'bg-white', 'text-slate-600', `hover:bg-${basePrefix}-100`);
                     label.classList.remove(`border-${basePrefix}-500`, `bg-${basePrefix}-500`, 'text-white', `hover:bg-${basePrefix}-600`);
                 }
